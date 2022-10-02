@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>TO MARS TOO EASY</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="shortcut icon" href="./img/logo_small.png" />
+
+    <link rel="stylesheet" href="./style.css" />
+    <script>
+      WebVRConfig = {
+        FORCE_ENABLE_VR: true,
+      };
+    </script>
+    <script src="js/es6-promise.min.js"></script>
+    <script src="https://unpkg.com/three@0.87.1/build/three.js"></script>
+    <script src="js/threex.domevents.js"></script>
+    <script src="js/three.flycontrols.js"></script>
+    <script src="js/MTLLoader.js"></script>
+    <script src="js/three.terrainloader.js"></script>
+    <script src="js/VRControls.js"></script>
+    <script src="js/VREffect.js"></script>
+    <script src="js/webvr-polyfill.js"></script>
+    <script src="js/webvr-manager.js"></script>
+    <script src="https://unpkg.com/three@0.87.1/examples/js/loaders/GLTFLoader.js"></script>
+  </head>
+  <body>
+    <image src="./img/logo.png" class="logo"></image>
+    <video class="openVideo" src="./video/opening.mp4" autoplay muted></video>
+    <div class="info">
+      <video class="infoVideo" width="680px" height="380px" loop="loop">
+        <source class="source" src="" type="video/mp4" />
+      </video>
+    </div>
+    <script>
+      let uuid = "";
+      let move = false;
+      let shining = false;
+      let opacityGlobal = 1;
+      let videoSrc = "MULTIFUNCTIONAL PUZZLE.mp4";
+      const objList = {};
+      const shiningList = {};
+      const openVideo = document.querySelector(".openVideo");
+      const infoVideo = document.querySelector(".infoVideo");
+      const info = document.querySelector(".info");
+      const logo = document.querySelector(".logo");
+      const WINDOW_WIDTH = window.innerWidth;
+      const WINDOW_HEIGHT = window.innerHeight;
+      const loader = new THREE.Loader();
+      const WORLD_WIDTH = 2000;
+      const WORLD_HEIGHT = 1900;
+      const scene = new THREE.Scene();
+      const clock = new THREE.Clock();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        WINDOW_WIDTH / WINDOW_HEIGHT,
+        1,
+        5000
+      );
+      // const light = new THREE.SpotLight(0xff0000, 1, 100);
+      // light.position.set(40, -10, 100);
+      // scene.add(light);
+
+      infoVideo.addEventListener("play", (e) => {
+        info.style.display = "block";
+      });
+
+      infoVideo.addEventListener("ended", (e) => {
+        console.log("infoVideo is ended");
+      });
+
+      openVideo.addEventListener("ended", myHandler, false);
+      function myHandler(e) {
+        logo.style.display = "block";
+
+        openVideo.style.display = "none";
+      }
+
+      // Position the camera slightly above and in front of the scene
+      camera.position.set(-150, -250, 60);
+      camera.up = new THREE.Vector3(0, 0, 2);
+      camera.lookAt(scene.position);
+
+      // Think of the renderer as the engine that drives the scene
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setClearColor(0xffd4a6);
+      renderer.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+      document.body.appendChild(renderer.domElement);
+
+      // Apply VR stereo rendering to renderer
+      const effect = new THREE.VREffect(renderer);
+      effect.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+      const manager = new WebVRManager(renderer, effect);
+
+      // URL to our DEM resource
+      const terrainURL = "data/Gale_HRSC_DEM_50m_300x285.bin";
+
+      // Utility to load the DEM data
+      const terrainLoader = new TerrainLoader();
+      const mtlLoader = new THREE.MTLLoader();
+      // We'll need this later
+      var surface;
+      // Create the plane geometry
+      const geometry = new THREE.PlaneGeometry(
+        WORLD_WIDTH,
+        WORLD_HEIGHT,
+        299,
+        284
+      );
+
+      //loader
+      const GLTFloader = new THREE.GLTFLoader();
+      GLTFloader.crossOrigin = true;
+
+      //arrow
+      GLTFloader.load("data/arrow.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(2, 2, 2);
+        object.rotation.set(1.59, 0, 0);
+        object.position.set(-101, -110, 28);
+        scene.add(object);
+        objList[object.uuid] = object;
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            camera.position.set(-97, -110, 38);
+          },
+          false
+        );
+      });
+
+      //base
+      GLTFloader.load("data/base.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(5, 5, 5);
+        object.rotation.set(1.59, 0, 0);
+        object.position.set(-96, -100, 22);
+        scene.add(object);
+        objList[object.uuid] = object;
+      });
+
+      //bed
+      GLTFloader.load("data/bed.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(5, 5, 5);
+        object.rotation.set(1.59, 0, 0);
+        object.position.set(-60, -100, 22);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+            source.setAttribute("src", "./video/bed.mp4");
+            console.log(source);
+            infoVideo.appendChild(source);
+            uuid = object.uuid;
+            infoVideo.load();
+            infoVideo.currentTime = 0;
+            infoVideo.play();
+          },
+          false
+        );
+      });
+
+      //cabinet
+      GLTFloader.load("data/cabinet.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(5, 5, 5);
+        object.rotation.set(-1.5, 1.9, 3.2);
+        object.position.set(-61, -65.5, 24);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+            source.setAttribute("src", "./video/cabinet.mp4");
+            console.log(source);
+            infoVideo.appendChild(source);
+            uuid = object.uuid;
+            infoVideo.load();
+            infoVideo.currentTime = 0;
+            infoVideo.play();
+          },
+          false
+        );
+      });
+
+      //dirty
+      GLTFloader.load("data/MSL_dirty.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(6, 6, 6);
+        object.rotation.set(-1.6, 3.3, 3.2);
+        object.position.set(-100, -150, 22.6);
+        scene.add(object);
+        objList[object.uuid] = object;
+      });
+
+      //tool
+      GLTFloader.load("data/tool.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.1, 0.1, 0.1);
+        object.rotation.set(2.8, 1.6, 5);
+        object.position.set(-80, -150, 23);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/tool.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      //wheel
+      GLTFloader.load("data/fix_wheel_GLTF.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.2, 0.2, 0.2);
+        object.rotation.set(0, 1.5, 2.7);
+        object.position.set(-120, -150, 22);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wheels.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      //puzzle
+      GLTFloader.load("data/puzzle.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(10, 10, 10);
+        object.rotation.set(1.59, 0, 0);
+        object.position.set(-107, -100, 28);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+            source.setAttribute("src", "./video/puzzle.mp4");
+            console.log(source);
+            infoVideo.appendChild(source);
+            uuid = object.uuid;
+            infoVideo.load();
+            infoVideo.currentTime = 0;
+            infoVideo.play();
+          },
+          false
+        );
+      });
+
+      //WALL
+      GLTFloader.load("data/NASA_WALL.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0.01);
+        object.position.set(-43.8, -134, 23.5);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+            source.setAttribute("src", "./video/wall.mp4");
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/NASA_WALL.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0.05);
+        object.position.set(-40, -80, 27);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wall.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/NASA_WALL.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0);
+        object.position.set(-48, -186, 22);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wall.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/NASA_WALL.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0.01);
+        object.position.set(-53.8, -134, 23.5);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wall.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/NASA_WALL.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0.05);
+        object.position.set(-50, -80, 27);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wall.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/NASA_WALL_doodle.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.035, 0.035, 0.035);
+        object.rotation.set(1.59, 1.5, 0);
+        object.position.set(-58, -186, 22);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+
+            source.setAttribute("src", "./video/wall.mp4");
+
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      GLTFloader.load("data/basketball.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(10, 15, 10);
+        object.rotation.set(1.7, 4.6, 0.05);
+        object.position.set(-100, -200, 22);
+        scene.add(object);
+        objList[object.uuid] = object;
+      });
+
+      GLTFloader.load("data/bsball.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(0.5, 0.5, 0.5);
+        object.rotation.set(1.7, 4.6, 0.05);
+        object.position.set(-90, -200, 24);
+        scene.add(object);
+        objList[object.uuid] = object;
+      });
+
+      GLTFloader.load("data/mascot.glb", function (data) {
+        const object = data.scene;
+        object.scale.set(100, 100, 100);
+        object.rotation.set(1.7, 0, 0.05);
+        object.position.set(30, -10, 84);
+        scene.add(object);
+        const domEvents = new THREEx.DomEvents(camera, renderer.domElement);
+        objList[object.uuid] = object;
+        shiningList[object.uuid] = object;
+
+        domEvents.addEventListener(
+          object,
+          "click",
+          function (event) {
+            const source = document.querySelector(".source");
+            source.setAttribute("src", "./video/robot.mp4");
+            camera.lookAt(object.position);
+            uuid = object.uuid;
+            move = true;
+          },
+          false
+        );
+      });
+
+      terrainLoader.load(terrainURL, function (data) {
+        for (let i = 0, l = geometry.vertices.length; i < l; i++) {
+          geometry.vertices[i].z = (data[i] / 65535) * 100;
+        }
+
+        const textureLoader = new THREE.TextureLoader();
+        const textureURL = "data/Gale_texture_high_4096px.jpg";
+
+        textureLoader.load(textureURL, function (texture) {
+          const material = new THREE.MeshLambertMaterial({
+            map: texture,
+          });
+
+          surface = new THREE.Mesh(geometry, material);
+          scene.add(surface);
+        });
+      });
+
+      // Lights!
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
+      dirLight.position.set(-1, 1, 1).normalize();
+
+      const ambiLight = new THREE.AmbientLight(0x999999);
+
+      // Add the lights to the scene
+      scene.add(ambiLight);
+      scene.add(dirLight);
+
+      // Detect mobile devices in the user agent
+      const is_mobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      // Conditionally load VR or Fly controls, based on whether we're on a mobile device
+      if (is_mobile) {
+        const controls = new THREE.VRControls(camera);
+      } else {
+        // WASD-style movement controls
+        var controls = new FlyControls(camera);
+
+        // Disable automatic forward movement
+        controls.autoForward = false;
+
+        // Click and drag to look around with the mouse
+        controls.dragToLook = true;
+
+        // Movement and roll speeds, adjust these and see what happens!
+        controls.movementSpeed = 20;
+        controls.rollSpeed = Math.PI / 12;
+      }
+
+      // Render loop
+      // This should go at the bottom of the script.
+      function render() {
+        if (move) {
+          var xOffset =
+            objList[uuid].position.x > camera.position.x
+              ? (xOffset = 1)
+              : (xOffset = -1);
+          var yOffset =
+            objList[uuid].position.y > camera.position.y
+              ? (yOffset = 1)
+              : (yOffset = -1);
+          var zOffset =
+            objList[uuid].position.z > camera.position.z
+              ? (zOffset = 1)
+              : (zOffset = -1);
+          var absX = 0;
+          var absY = 0;
+          var absZ = 0;
+          absX = Math.abs(objList[uuid].position.x - camera.position.x);
+          absY = Math.abs(objList[uuid].position.y - camera.position.y);
+          absZ = Math.abs(objList[uuid].position.z - camera.position.z);
+          if (absX > 20 || absY > 20 || absZ > 20) {
+            if (absX > 20) {
+              camera.position.set(
+                camera.position.x + xOffset * 2,
+                camera.position.y,
+                camera.position.z
+              );
+            } else if (absY > 20) {
+              camera.position.set(
+                camera.position.x,
+                camera.position.y + yOffset * 2,
+                camera.position.z
+              );
+            } else if (absZ > 20) {
+              camera.position.set(
+                camera.position.x,
+                camera.position.y,
+                camera.position.z + zOffset * 2
+              );
+            }
+          } else {
+            const width = 300;
+            const height = 300;
+            console.log("play");
+
+            renderer.setSize(width, height);
+
+            document.body.appendChild(renderer.domElement);
+            infoVideo.currentTime = 0;
+            infoVideo.load();
+            infoVideo.play();
+            move = false;
+          }
+        }
+
+        //shining
+        if (uuid != "") {
+          objList[uuid].traverse((mod) => {
+            if (mod.isMesh) {
+              mod.material.opacity = 1;
+              mod.material.transparent = true;
+            }
+          });
+          delete shiningList[uuid];
+        }
+        for (const key in shiningList) {
+          shiningList[key].traverse((mod) => {
+            if (mod.isMesh) {
+              mod.material.opacity = opacityGlobal;
+              mod.material.transparent = true;
+            }
+          });
+        }
+        if (opacityGlobal <= 0.4) {
+          shining = true;
+        } else if (opacityGlobal >= 1) {
+          shining = false;
+        }
+        shining ? (opacityGlobal += 0.01) : (opacityGlobal -= 0.01);
+
+        // Get the difference from when the clock was last updated and update the controls based on that value.
+        const delta = clock.getDelta();
+        controls.update(delta);
+
+        // Update the scene through the manager.
+        manager.render(scene, camera);
+
+        // Call the render function again
+        requestAnimationFrame(render);
+      }
+
+      render();
+    </script>
+  </body>
+</html>
