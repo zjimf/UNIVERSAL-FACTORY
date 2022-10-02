@@ -16,4 +16,4 @@ git clone git@github.com:ZJimFang/UNIVERSALFACTORY.git
 
 ### `open index.html in build folder`
 
-### `ctrl + L + O`
+### `alt + L + O`
