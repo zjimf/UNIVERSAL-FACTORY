@@ -1,8 +1,7 @@
-### `Deploy URL`
+### `url`
 
-```
 https://universalfactory-6cb00.firebaseapp.com/
-```
+
 
 ### `git clone`
 
