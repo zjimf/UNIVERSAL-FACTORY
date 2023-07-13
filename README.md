@@ -9,13 +9,13 @@ https://universalfactory-6cb00.firebaseapp.com/
 - Git Clone
 
   ```
-  git clone git@github.com:zjimf/UNIVERSALFACTORY.git
+  git@github.com:zjimf/UNIVERSAL-FACTORY.git
   ```
 
-- Open file in vscode
+- Open file in vs code
 
 - Download [live server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
 
-- Open index.html in build folder
+- Open index.html in the build folder
 
 - Alt + L + O
