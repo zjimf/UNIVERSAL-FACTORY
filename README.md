@@ -1,18 +1,18 @@
-### `url`
+### URL
 
 https://universalfactory-6cb00.firebaseapp.com/
 
+### Open project
+- Git Clone
 
-### `git clone`
+  ```
+  git clone git@github.com:zjimf/UNIVERSALFACTORY.git
+  ```
 
-```
-git clone git@github.com:ZJimFang/UNIVERSALFACTORY.git
-```
+- Open file in vscode
 
-### `open file in vscode`
+- Download [live server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
 
-### `download live server`
+- Open index.html in build folder
 
-### `open index.html in build folder`
-
-### `alt + L + O`
+- Alt + L + O
